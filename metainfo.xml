@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='utf-8'?>
+<component type="desktop-application">
+    <id>io.github.kirukomaru11.Archive</id>
+    <developer id="io.github.kirukomaru11">
+        <name>きるこ丸11号</name>
+    </developer>
+    <name>Archive</name>
+    <summary>Track progress across media</summary>
+    <description>
+        <p>Archive can track progress and also work as a launcher for files and URIs for its entries and have categories for them, such as manga, anime, or TV shows, etc.</p>
+        <p>Some features:</p>
+        <ul>
+          <li>Categories</li>
+          <li>Notes for entries</li>
+          <li>Filtering by status ("in progress", "finished", "planned"), tags, file name</li>
+          <li>Hiding individual entries and categories</li>
+          <li>Entry color themeing</li>
+          <li>Adding CBZ files, videos, and folders as entries</li>
+          <li>Drag and drop for adding entries and for reordering categories</li>
+          <li>Sorting by random, alphabetical order, date, or launched order</li>
+          <li>Custom covers for entries</li>
+          <li>Launching commands/URIs</li>
+        </ul>
+    </description>
+    <branding>
+        <color type="primary" scheme_preference="light">#1c71d8</color>
+        <color type="primary" scheme_preference="dark">#1a5fb4</color>
+    </branding>
+    <supports>
+        <control>pointing</control>
+        <control>keyboard</control>
+        <control>touch</control>
+    </supports>
+    <launchable type="desktop-id">io.github.kirukomaru11.Archive.desktop</launchable>
+    <icon type="stock">io.github.kirukomaru11.Archive</icon>
+    <categories>
+        <category>Graphics</category>
+    </categories>
+    <keywords>
+      <keyword>GTK</keyword>
+      <keyword>GNOME</keyword>
+      <keyword>Gallery</keyword>
+      <keyword>Catalog</keyword>
+      <keyword>Track</keyword>
+      <keyword>Launch</keyword>
+      <keyword>Tags</keyword>
+      <keyword>Notes</keyword>
+    </keywords>
+    <provides>
+        <binary>archive</binary>
+    </provides>
+    <content_rating type="oars-1.1" />
+    <metadata_license>MIT</metadata_license>
+    <project_license>MIT</project_license>
+    <url type="bugtracker">https://github.com/kirukomaru11/Archive/issues</url>
+    <url type="homepage">https://github.com/kirukomaru11/Archive</url>
+    <url type="vcs-browser">https://github.com/kirukomaru11/Archive</url>
+    <releases>
+        <release version="1.0" date="2025-10-31">
+            <description>
+                <ul>
+                    <li>First release</li>
+                </ul>
+            </description>
+        </release>
+    </releases>
+</component>
