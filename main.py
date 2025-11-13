@@ -30,21 +30,9 @@ navigation-view {
 .colored sheet,
 .colored navigation-view,
 .colored overlay-split-view > :last-child:not(.sidebar-pane) {
-  background: linear-gradient(
-      to bottom right,
-      color-mix(in srgb, var(--color-1) 45%, transparent),
-      transparent
-    ),
-    linear-gradient(
-      to bottom left,
-      color-mix(in srgb, var(--color-2) 45%, transparent),
-      transparent
-    ),
-    linear-gradient(
-      to top,
-      color-mix(in srgb, var(--color-3) 45%, transparent),
-      transparent
-    ),
+  background: linear-gradient(to bottom right, color-mix(in srgb, var(--color-1) 45%, transparent), transparent),
+    linear-gradient(to bottom left,  color-mix(in srgb, var(--color-2) 45%, transparent),  transparent),
+    linear-gradient(to top, color-mix(in srgb, var(--color-3) 45%, transparent), transparent),
     var(--window-bg-color);
 }
 .colored overlay-split-view > .sidebar-pane { background: color-mix(in srgb, var(--sidebar-bg-color) 15%, transparent); box-shadow: none; }
@@ -58,7 +46,9 @@ finish_func = lambda p, pp: setattr(p.file, "colors", palette(pp, distance=1.0, 
 def shutdown(*_):
     if app.lookup_action("clear-unused").get_state().unpack():
         for i in tuple(i for i in app.data["Entries"]):
-            if not os.path.exists(app.data_folder.get_child(i).peek_path()): del app.data["Entries"][i]
+            if not os.path.exists(app.data_folder.get_child(i).peek_path()):
+                print("Removing", i)
+                del app.data["Entries"][i]
     data_save()
     app.thread.shutdown(wait=True, cancel_futures=True)
 
@@ -69,7 +59,7 @@ app = App(shortcuts={"General": (("Fullscreen", "app.fullscreen"), ("Sidebar", "
           data={
             "Window": { "default-height": 600, "default-width": 600, "maximized": False },
             "View": { "show-hidden": False, "sort": sorts[0], "colors": True },
-            "General": { "launch-targets": False, "clear-unused": False, "exit-launch": False },
+            "General": {"clear-unused": False},
             "Entries": {}
           })
 app.all_files, app.modifying = [], False
@@ -148,7 +138,7 @@ def catalog_activate(m, c, b):
     if edit.get_mapped(): return
     set_file(c.file if c.file.parent.has_parent(app.data_folder) else f_catalog.file)
     u = app.data["Entries"][app.data_folder.get_relative_path(app.file)]["Target"]
-    if app.lookup_action("launch-targets").get_state().unpack() and u:
+    if app.data["Entries"][sidebar.get_selected_item().get_title()]["Launch Targets"] and u:
         if u.startswith("https"): launch(u)
         else: Gio.AppInfo.create_from_commandline(f"flatpak-spawn --host {u}", None, Gio.AppInfoCreateFlags.NONE).launch()
     else:
@@ -159,7 +149,7 @@ def catalog_activate(m, c, b):
         launch(c.file)
     Toast(f"{c.file.get_basename()} launched!")
     app.data["Entries"][app.data_folder.get_relative_path(app.file)]["Launched"] = GLib.DateTime.new_now_utc().to_unix()
-    if app.lookup_action("exit-launch").get_state().unpack(): app.window.close()
+    if app.data["Entries"][sidebar.get_selected_item().get_title()]["Exit After Launching"]: app.window.close()
 catalog, f_catalog = tuple(MasonryBox(activate=catalog_activate) for _ in range(2))
 for i in (catalog, f_catalog):
     i.h = {}
@@ -196,7 +186,7 @@ search_bar.connect_entry(search_layout.get_child("search"))
 Action("search", lambda *_: search_bar.set_search_mode(not search_bar.get_search_mode_enabled()), "<primary>f")
 for i in (header, search_bar): toolbar.add_top_bar(i)
 
-menu = Menu((("Fullscreen", "fullscreen"), ("Open Current Folder", "open-folder")), ("Sort", ("sort", sorts)), (("Show Hidden", "show-hidden"), ("Launch Targets", "launch-targets"), ("Exit After Launch", "exit-launch"), ("Entry Color Theming", "colors"), ("Clear Unused", "clear-unused")), app.default_menu)
+menu = Menu((("Fullscreen", "fullscreen"), ("Open Current Folder", "open-folder")), ("Sort", ("sort", sorts)), (("Show Hidden", "show-hidden"), ("Entry Color Theming", "colors"), ("Clear Unused", "clear-unused")), app.default_menu)
 
 Action("fullscreen", lambda *_: toolbar.set_reveal_top_bars(not toolbar.get_reveal_top_bars()), "F11")
 for i in (Button(t=Gtk.MenuButton, icon_name="open-menu", tooltip_text="Menu", menu_model=menu), Button(t=Gtk.ToggleButton, icon_name="edit-find", tooltip_text="Search", bindings=((None, "active", search_bar, "search-mode-enabled", GObject.BindingFlags.DEFAULT | GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE),))): header.pack_end(i)
@@ -297,7 +287,7 @@ Action("add-file", lambda *_: Gtk.FileDialog(filters=file_filter).open_multiple(
 Action("add-folder", lambda *_: Gtk.FileDialog().select_folder(app.window, None, lambda d, r: add((d.select_folder_finish(r),))))
 
 delete_dialog = Adw.AlertDialog(default_response="cancel")
-delete_dialog.connect("response", lambda d, r: (rmtree(app.file.peek_path() if os.path.isdir(app.file.peek_path()) else app.file.delete(), edit.close()) if r == "confirm" else None))
+delete_dialog.connect("response", lambda d, r: (rmtree(app.file.peek_path()) if os.path.isdir(app.file.peek_path()) else app.file.delete(), edit.close()) if r == "confirm" else None)
 for i in ("cancel", "confirm"): delete_dialog.add_response(i, i.title())
 delete_dialog.set_response_appearance("confirm", Adw.ResponseAppearance.DESTRUCTIVE)
 
@@ -313,7 +303,7 @@ status.r = Adw.ActionRow(title="Status")
 status.r.add_suffix(status)
 tags = TagRow(title="Tags")
 dates = tuple(DateRow(title=i) for i in ("Date", "Launched"))
-hidden = Adw.SwitchRow(title="Hidden")
+hidden, exit_after_launching, launch_targets = tuple(Adw.SwitchRow(title=i) for i in ("Hidden", "Exit After Launching", "Launch Targets"))
 def edit_changed(*_):
     if app.modifying: return
     for o, p in properties:
@@ -338,6 +328,8 @@ properties = ((target, "text"),
              (dates[0].calendar, "date"),
              (dates[1].calendar, "date"),
              (hidden, "active"),
+             (exit_after_launching, "active"),
+             (launch_targets, "active"),
              (tags, "tags"),)
 for o, p in properties:
     o.connect(f"notify::{p}", edit_changed)
@@ -388,12 +380,14 @@ def catalog_update(f, s):
                 p = get_f(catalog.h[i].file)
                 app.thread.submit(load_image, catalog.h[i], p[0], "image" if p[1] else None, finish_func)
         GLib.idle_add(sidebar_section)
+    elif not s: GLib.idle_add(do_search)
 def f_info(d):
     if not hasattr(d, "m"):
         d.m = d.monitor(Gio.FileMonitorFlags.WATCH_MOVES)
         d.m.connect("changed", changed)
-    if d.has_parent(app.data_folder) and not app.data_folder.get_relative_path(d) in app.data["Entries"]:
-        app.data["Entries"][app.data_folder.get_relative_path(d)] = {"ID": max(tuple(app.data["Entries"][i]["ID"] for i in app.data["Entries"] if "ID" in app.data["Entries"][i]), default=0) + 1, "Hidden": False, "Notes": ""}
+    if d.has_parent(app.data_folder):
+        app.data["Entries"].setdefault(app.data_folder.get_relative_path(d), {})
+        for k, v in {"ID": max(tuple(app.data["Entries"][i]["ID"] for i in app.data["Entries"] if "ID" in app.data["Entries"][i]), default=0) + 1, "Hidden": False, "Notes": "", "Launch Targets": True, "Exit After Launching": False}.items(): app.data["Entries"][app.data_folder.get_relative_path(d)].setdefault(k, v)
     for i in sorted(os.listdir(d.peek_path()), key=alphabetical_sort):
         f = d.get_child(i)
         f.parent = d
@@ -402,9 +396,11 @@ def f_info(d):
             f_info(f)
         elif not (i.endswith(".cbz") or Gio.content_type_guess(i)[0].startswith(("video", "image")) or d.equal(app.data_folder)): continue
         if not tuple(it for it in app.all_files if it.equal(f)): app.all_files.append(f)
-        if not d.equal(app.data_folder) and d.parent == app.data_folder and not app.data_folder.get_relative_path(f) in app.data["Entries"]:
-            app.data["Entries"][app.data_folder.get_relative_path(f)] = {"Date": int(os.path.getmtime(f.peek_path())), "Launched": GLib.DateTime.new_now_utc().to_unix(), "Status": 0, "Hidden": False, "Target": "", "Notes": "", "Tags": []}
-            Toast(f"{f.get_basename()} added", timeout=2)
+        if not d.equal(app.data_folder) and d.parent == app.data_folder:
+            if not app.data_folder.get_relative_path(f) in app.data["Entries"]:
+                Toast(f"{app.data_folder.get_relative_path(f)} added", timeout=2)
+            app.data["Entries"].setdefault(app.data_folder.get_relative_path(f), {})
+            for k, v in {"Date": int(os.path.getmtime(f.peek_path())), "Launched": GLib.DateTime.new_now_utc().to_unix(), "Status": 0, "Hidden": False, "Target": "", "Notes": "", "Tags": []}.items(): app.data["Entries"][app.data_folder.get_relative_path(f)].setdefault(k, v)
     if not tuple(it for it in app.all_files if it.equal(d)): app.all_files.append(d)
 f_info(app.data_folder)
 app.lookup_action("show-hidden").bind_property("state", sidebar, "filter", GObject.BindingFlags.DEFAULT | GObject.BindingFlags.SYNC_CREATE, lambda b, v: free_filter if v.get_boolean() else no_h_filter)
