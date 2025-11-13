@@ -397,8 +397,7 @@ def f_info(d):
         elif not (i.endswith(".cbz") or Gio.content_type_guess(i)[0].startswith(("video", "image")) or d.equal(app.data_folder)): continue
         if not tuple(it for it in app.all_files if it.equal(f)): app.all_files.append(f)
         if not d.equal(app.data_folder) and d.parent == app.data_folder:
-            if not app.data_folder.get_relative_path(f) in app.data["Entries"]:
-                Toast(f"{app.data_folder.get_relative_path(f)} added", timeout=2)
+            if not app.data_folder.get_relative_path(f) in app.data["Entries"]: Toast(f"{app.data_folder.get_relative_path(f)} added", timeout=2)
             app.data["Entries"].setdefault(app.data_folder.get_relative_path(f), {})
             for k, v in {"Date": int(os.path.getmtime(f.peek_path())), "Launched": GLib.DateTime.new_now_utc().to_unix(), "Status": 0, "Hidden": False, "Target": "", "Notes": "", "Tags": []}.items(): app.data["Entries"][app.data_folder.get_relative_path(f)].setdefault(k, v)
     if not tuple(it for it in app.all_files if it.equal(d)): app.all_files.append(d)
