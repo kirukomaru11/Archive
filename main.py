@@ -327,6 +327,7 @@ notes_row.get_child().get_buffer().connect("notify::text", edit_changed)
 properties = ((target, "text"),
              (dates[0].calendar, "date"),
              (dates[1].calendar, "date"),
+             (status, "active"),
              (hidden, "active"),
              (exit_after_launching, "active"),
              (launch_targets, "active"),
