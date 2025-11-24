@@ -4,7 +4,7 @@ from shutil import rmtree
 
 from AppUtils import *
 
-css = """
+style = """
 .notes { padding: 10px; }
 
 searchbar multi-layout-view > box { border-spacing: 6px; }
@@ -41,7 +41,7 @@ navigation-view {
 sorts = ("Random", "Alphabetical Ascending", "Alphabetical Descending", "Launched Ascending", "Launched Descending", "Date Ascending", "Date Descending")
 date_sort = lambda e: app.data["Entries"][app.data_folder.get_relative_path(e)]["Date"]
 launched_sort = lambda e: app.data["Entries"][app.data_folder.get_relative_path(e)]["Launched"]
-finish_func = lambda p, pp: setattr(p.file, "colors", palette(pp, distance=1.0, black_white=1.4))
+finish_func = lambda p, pp: setattr(p.file, "colors", palette(pp, distance=100, black_white=140))
 
 def shutdown(*_):
     if app.lookup_action("clear-unused").get_state().unpack():
@@ -55,7 +55,7 @@ def shutdown(*_):
 app = App(shortcuts={"General": (("Fullscreen", "app.fullscreen"), ("Sidebar", "F9"), ("Search", "app.search"), ("Open Current Folder", "app.open"), ("Paste Image/Files/Folder", "<primary>v"), ("Toggle Hidden", "app.hidden"), ("Keyboard Shortcuts", "app.shortcuts"))},
           shutdown=shutdown,
           application_id="io.github.kirukomaru11.Archive",
-          style=css,
+          style=style,
           data={
             "Window": { "default-height": 600, "default-width": 600, "maximized": False },
             "View": { "show-hidden": False, "sort": sorts[0], "colors": True },
