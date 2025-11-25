@@ -41,7 +41,6 @@ navigation-view {
 sorts = ("Random", "Alphabetical Ascending", "Alphabetical Descending", "Launched Ascending", "Launched Descending", "Date Ascending", "Date Descending")
 date_sort = lambda e: app.data["Entries"][app.data_folder.get_relative_path(e)]["Date"]
 launched_sort = lambda e: app.data["Entries"][app.data_folder.get_relative_path(e)]["Launched"]
-finish_func = lambda p, pp: setattr(p.file, "colors", palette(pp, distance=100, black_white=140))
 
 def shutdown(*_):
     if app.lookup_action("clear-unused").get_state().unpack():
@@ -62,6 +61,7 @@ app = App(shortcuts={"General": (("Fullscreen", "app.fullscreen"), ("Sidebar", "
             "General": {"clear-unused": False},
             "Entries": {}
           })
+app.finish_func = lambda p, pp: setattr(p.file, "colors", palette(pp, distance=100, black_white=140))
 app.all_files, app.modifying = [], False
 Action("open-folder", lambda *_: launch(f_catalog.file if f_catalog.get_mapped() else sidebar.get_selected_item().file if sidebar.get_selected_item() else app.data_folder), "<primary>o")
 _breakpoint = Adw.Breakpoint.new(Adw.BreakpointCondition.new_length(Adw.BreakpointConditionLengthType.MAX_WIDTH, 700, Adw.LengthUnit.PX))
@@ -85,7 +85,7 @@ def set_file(file):
 def do_search(*_):
     if app.modifying: return
     catalog.page, catalog.end = 0, False
-    catalog.remove_all()
+    masonrybox_remove_all(catalog)
     catalog.get_next_sibling().set_visible(False)
     if not sidebar.get_selected_item(): return catalog.get_next_sibling().set_properties(title="Add a Category", icon_name="document-new-symbolic", visible=True)
     fs = tuple(i for i in app.all_files if i.has_parent(sidebar.get_selected_item().file))
@@ -115,13 +115,13 @@ def catalog_load_more(scrolledwindow, position):
         pages = tuple(ca.c[i:i + 30] for i in range(0, len(ca.c), 30))
         if not ca.page > len(pages):
             for file in pages[ca.page - 1]:
-                if file.peek_path() in ca.h: GLib.idle_add(ca.add, ca.h[file.peek_path()])
+                if file.peek_path() in ca.h: GLib.idle_add(masonrybox_add, *(ca, ca.h[file.peek_path()]))
                 else:
                     f, c = get_f(file)
-                    entry = Media(f, mimetype="image" if c else None, finish_func=finish_func)
+                    entry = Media(f, mimetype="image" if c else None)
                     entry.file = file
                     ca.h[file.peek_path()] = entry
-                    GLib.idle_add(ca.add, entry)
+                    GLib.idle_add(masonrybox_add, *(ca, entry))
                     event = Gtk.EventControllerMotion()
                     event.connect("enter", lambda e, *_: GLib.idle_add(set_colors, *(e.get_widget().file, True)))
                     GLib.idle_add(entry.add_controller, event)
@@ -132,7 +132,7 @@ def catalog_load_more(scrolledwindow, position):
 def load_f_catalog(file):
     f_catalog.file, f_catalog.page, f_catalog.end = file, 0, False
     f_catalog.c = tuple(i for i in app.all_files if i.has_parent(f_catalog.file))
-    f_catalog.remove_all()
+    masonrybox_remove_all(f_catalog)
     catalog_load_more(f_catalog.get_child(), Gtk.PositionType.BOTTOM)
 def catalog_activate(m, c, b):
     if edit.get_mapped(): return
@@ -379,7 +379,7 @@ def catalog_update(f, s):
         for i in catalog.h:
             if app.data_folder.get_relative_path(catalog.h[i].file).replace(GLib.DIR_SEPARATOR_S, " @ ") == f.get_basename():
                 p = get_f(catalog.h[i].file)
-                app.thread.submit(load_image, catalog.h[i], p[0], "image" if p[1] else None, finish_func)
+                app.thread.submit(load_media, catalog.h[i], p[0], "image" if p[1] else None)
         GLib.idle_add(sidebar_section)
     elif not s: GLib.idle_add(do_search)
 def f_info(d):
